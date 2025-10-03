@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: Cruise Blog CMS API
+  description: API specification for local admin CMS operations (not deployed to production)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+paths:
+  /ships:
+    get:
+      summary: List all ships
+      operationId: listShips
+      tags: [Ships]
+      responses:
+        '200':
+          description: List of ships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ship'
+
+  /ships/{id}/reviews:
+    get:
+      summary: Get reviews for a ship
+      operationId: getShipReviews
+      tags: [Reviews]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+
+  /generate/article:
+    post:
+      summary: Generate article using Claude API
+      operationId: generateArticle
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shipId, topicId]
+              properties:
+                shipId:
+                  type: string
+                  format: uuid
+                topicId:
+                  type: string
+                  format: uuid
+                styleGuideId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Generated article content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  content:
+                    type: string
+                  excerpt:
+                    type: string
+        '400':
+          description: Invalid request
+        '500':
+          description: Generation failed
+
+  /articles:
+    post:
+      summary: Save article draft
+      operationId: createArticle
+      tags: [Articles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleInput'
+      responses:
+        '201':
+          description: Article created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+
+  /articles/{id}/publish:
+    post:
+      summary: Publish article
+      operationId: publishArticle
+      tags: [Articles]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+
+  /deploy:
+    post:
+      summary: Build and deploy static site
+      operationId: deployStatic
+      tags: [Deployment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dryRun:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Deployment successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filesDeployed:
+                    type: integer
+                  deploymentUrl:
+                    type: string
+
+components:
+  schemas:
+    Ship:
+      type: object
+      required: [id, name, cruise_line]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        cruise_line:
+          type: string
+        year_built:
+          type: integer
+        capacity:
+          type: integer
+        gross_tonnage:
+          type: integer
+        itineraries:
+          type: array
+          items:
+            type: string
+
+    Review:
+      type: object
+      required: [id, ship_id, rating, review_text]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ship_id:
+          type: string
+          format: uuid
+        cruise_date:
+          type: string
+          format: date
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewer_name:
+          type: string
+        review_text:
+          type: string
+        categories:
+          type: object
+          additionalProperties:
+            type: integer
+
+    ArticleInput:
+      type: object
+      required: [ship_id, topic_id, title, content]
+      properties:
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+        content:
+          type: string
+        excerpt:
+          type: string
+          maxLength: 200
+        featured_image_id:
+          type: string
+          format: uuid
+
+    Article:
+      type: object
+      required: [id, ship_id, topic_id, title, slug, content, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        content:
+          type: string
+        excerpt:
+          type: string
+        featured_image_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [draft, published]
+        published_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

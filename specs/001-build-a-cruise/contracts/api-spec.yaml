@@ -1,0 +1,908 @@
+openapi: 3.0.3
+info:
+  title: Norwegianista CMS API
+  description: API for cruise blog CMS with AI content generation
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@norwegianista.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://api.norwegianista.com
+    description: Production
+
+tags:
+  - name: ships
+    description: Cruise ship management
+  - name: topics
+    description: Article topic categories
+  - name: articles
+    description: Article management and generation
+  - name: reviews
+    description: Ship reviews
+  - name: images
+    description: Image management
+  - name: style-guides
+    description: Editorial style guide configuration
+  - name: auth
+    description: Authentication
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Ship:
+      type: object
+      required:
+        - id
+        - name
+        - cruise_line
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Norwegian Encore"
+        cruise_line:
+          type: string
+          example: "Norwegian Cruise Line"
+        ship_class:
+          type: string
+          example: "Breakaway Plus"
+        year_built:
+          type: integer
+          example: 2019
+        capacity:
+          type: integer
+          example: 3998
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Topic:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Dining & Cuisine"
+        slug:
+          type: string
+          example: "dining-cuisine"
+        description:
+          type: string
+        icon:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      required:
+        - id
+        - ship_id
+        - content
+      properties:
+        id:
+          type: string
+          format: uuid
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+          nullable: true
+        author_name:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        content:
+          type: string
+        review_date:
+          type: string
+          format: date
+          nullable: true
+        helpful_count:
+          type: integer
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Image:
+      type: object
+      required:
+        - id
+        - ship_id
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+          nullable: true
+        url:
+          type: string
+          format: uri
+        storage_path:
+          type: string
+          nullable: true
+        caption:
+          type: string
+          nullable: true
+        photographer_credit:
+          type: string
+          nullable: true
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        file_size:
+          type: integer
+          nullable: true
+        mime_type:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Article:
+      type: object
+      required:
+        - id
+        - ship_id
+        - topic_id
+        - title
+        - slug
+        - content
+        - status
+        - created_by
+      properties:
+        id:
+          type: string
+          format: uuid
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        content:
+          type: string
+        content_format:
+          type: string
+          enum: [html, markdown]
+          default: html
+        word_count:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, generated, published, unpublished]
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        unpublished_at:
+          type: string
+          format: date-time
+          nullable: true
+        style_guide_id:
+          type: string
+          format: uuid
+          nullable: true
+        generation_prompt:
+          type: string
+          nullable: true
+        manual_edits_made:
+          type: boolean
+          default: false
+        version:
+          type: integer
+          default: 1
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        # Expanded relations
+        ship:
+          $ref: '#/components/schemas/Ship'
+        topic:
+          $ref: '#/components/schemas/Topic'
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+
+    StyleGuide:
+      type: object
+      required:
+        - id
+        - name
+        - system_prompt
+        - created_by
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        system_prompt:
+          type: string
+        example_output:
+          type: string
+          nullable: true
+        tone:
+          type: string
+          nullable: true
+        target_word_count:
+          type: integer
+          default: 1200
+        is_active:
+          type: boolean
+          default: true
+        is_default:
+          type: boolean
+          default: false
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ArticleGenerationRequest:
+      type: object
+      required:
+        - ship_id
+        - topic_id
+      properties:
+        ship_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        style_guide_id:
+          type: string
+          format: uuid
+          nullable: true
+        target_word_count:
+          type: integer
+          default: 1200
+
+    ArticleGenerationJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        article_id:
+          type: string
+          format: uuid
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Ships
+  /ships:
+    get:
+      tags: [ships]
+      summary: List all ships
+      security: []
+      parameters:
+        - name: cruise_line
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ship'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+
+  /ships/{id}:
+    get:
+      tags: [ships]
+      summary: Get ship by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ship'
+        '404':
+          description: Ship not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Topics
+  /topics:
+    get:
+      tags: [topics]
+      summary: List all topics
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Topic'
+
+  # Reviews
+  /reviews:
+    get:
+      tags: [reviews]
+      summary: Get reviews by ship and/or topic
+      parameters:
+        - name: ship_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: topic_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+
+  # Images
+  /images:
+    get:
+      tags: [images]
+      summary: Get images by ship and/or topic
+      parameters:
+        - name: ship_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: topic_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Image'
+
+  # Articles
+  /articles:
+    get:
+      tags: [articles]
+      summary: List articles
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, generated, published, unpublished]
+        - name: ship_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: topic_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+                  total:
+                    type: integer
+
+    post:
+      tags: [articles]
+      summary: Create draft article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ship_id
+                - topic_id
+                - title
+              properties:
+                ship_id:
+                  type: string
+                  format: uuid
+                topic_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                content:
+                  type: string
+                  default: ""
+      responses:
+        '201':
+          description: Article created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /articles/{id}:
+    get:
+      tags: [articles]
+      summary: Get article by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '404':
+          description: Article not found
+
+    put:
+      tags: [articles]
+      summary: Update article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                version:
+                  type: integer
+                  description: For optimistic locking
+      responses:
+        '200':
+          description: Article updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '409':
+          description: Version conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [articles]
+      summary: Delete article permanently
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Article deleted
+        '404':
+          description: Article not found
+
+  /articles/generate:
+    post:
+      tags: [articles]
+      summary: Generate article with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleGenerationRequest'
+      responses:
+        '202':
+          description: Generation job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleGenerationJob'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /articles/generate/{job_id}:
+    get:
+      tags: [articles]
+      summary: Check generation job status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleGenerationJob'
+
+  /articles/{id}/publish:
+    post:
+      tags: [articles]
+      summary: Publish article to static site
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '400':
+          description: Cannot publish (e.g., no content)
+
+  /articles/{id}/unpublish:
+    post:
+      tags: [articles]
+      summary: Unpublish article from static site
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+
+  # Style Guides
+  /style-guides:
+    get:
+      tags: [style-guides]
+      summary: List style guides
+      parameters:
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StyleGuide'
+
+    post:
+      tags: [style-guides]
+      summary: Create style guide
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - system_prompt
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                system_prompt:
+                  type: string
+                example_output:
+                  type: string
+                tone:
+                  type: string
+                target_word_count:
+                  type: integer
+                is_default:
+                  type: boolean
+      responses:
+        '201':
+          description: Style guide created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StyleGuide'
+
+  /style-guides/{id}:
+    get:
+      tags: [style-guides]
+      summary: Get style guide by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StyleGuide'
+
+    put:
+      tags: [style-guides]
+      summary: Update style guide
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                system_prompt:
+                  type: string
+                example_output:
+                  type: string
+                tone:
+                  type: string
+                target_word_count:
+                  type: integer
+                is_active:
+                  type: boolean
+                is_default:
+                  type: boolean
+      responses:
+        '200':
+          description: Style guide updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StyleGuide'
+
+    delete:
+      tags: [style-guides]
+      summary: Delete style guide
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Style guide deleted
+        '400':
+          description: Cannot delete (in use by articles)
